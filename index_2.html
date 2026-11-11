@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0e14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BBX Deck">
+<link rel="manifest" href="manifest.json">
+<title>Beyblade X Deck Manager</title>
+<style>
+  :root{
+    --bg:#0c0e14; --bg2:#141824; --card:#1a1f2e; --card2:#222838;
+    --border:#2c3347; --text:#eef1f8; --muted:#8b93a7;
+    --accent:#19e68c; --accent2:#2e7cf6; --red:#f6465d; --yellow:#f0b90b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:16px; overscroll-behavior:none;
+  }
+  #app{max-width:560px; margin:0 auto; padding:0 12px calc(110px + env(safe-area-inset-bottom));}
+  header{padding:calc(14px + env(safe-area-inset-top)) 4px 10px; display:flex; align-items:center; gap:10px;}
+  .logo-x{
+    width:38px;height:38px;flex:0 0 38px;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent2),var(--accent));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:24px;color:#0b0d12;font-style:italic;
+  }
+  header h1{font-size:19px; font-weight:800; letter-spacing:.3px;}
+  header .sub{font-size:12px; color:var(--muted);}
+  .head-btn{margin-left:auto; background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:10px; padding:7px 10px; font-size:13px; font-weight:700; cursor:pointer;}
+
+  .tabs{
+    position:fixed; bottom:0; left:0; right:0; z-index:40;
+    display:flex; background:rgba(16,19,28,.97); border-top:1px solid var(--border);
+    backdrop-filter:blur(8px); padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+    max-width:560px; margin:0 auto;
+  }
+  .tab{flex:1; text-align:center; padding:10px 4px; border:none; background:none; color:var(--muted); font-size:13px; font-weight:700; border-radius:10px; cursor:pointer;}
+  .tab .ico{display:block; font-size:20px; margin-bottom:2px;}
+  .tab.active{color:var(--accent); background:rgba(25,230,140,.08);}
+
+  .section-title{display:flex; align-items:center; justify-content:space-between; margin:16px 2px 10px;}
+  .section-title h2{font-size:16px; font-weight:800;}
+  .count-pill{font-size:12px; color:var(--muted); background:var(--card); border:1px solid var(--border); padding:3px 10px; border-radius:99px;}
+
+  .btn{border:none; border-radius:12px; font-weight:800; cursor:pointer; font-size:15px; padding:13px 16px; color:#0b0d12; background:linear-gradient(135deg,var(--accent),#0fc77a); width:100%; display:block;}
+  .btn.secondary{background:var(--card2); color:var(--text); border:1px solid var(--border);}
+  .btn.small{width:auto; padding:8px 14px; font-size:13px; border-radius:10px;}
+  .btn.danger{background:rgba(246,70,93,.14); color:var(--red); border:1px solid rgba(246,70,93,.4);}
+  .btn:active{transform:scale(.98);}
+
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; margin-bottom:10px;}
+  .bey-row{display:flex; align-items:center; gap:10px;}
+  .bey-info{flex:1; min-width:0;}
+  .bey-name{font-weight:800; font-size:15px; line-height:1.25; word-wrap:break-word;}
+  .bey-sub{font-size:12px; color:var(--muted); margin-top:3px;}
+  .fin-line{font-size:12px; color:var(--muted); margin-top:3px;}
+  .wr{font-weight:900; font-size:17px; text-align:right; min-width:58px;}
+  .wr small{display:block; font-weight:600; font-size:10.5px; color:var(--muted);}
+  .wr.good{color:var(--accent);} .wr.mid{color:var(--yellow);} .wr.bad{color:var(--red);} .wr.none{color:var(--muted);}
+  .wr-bar{height:5px; border-radius:99px; background:#2a3040; margin-top:9px; overflow:hidden;}
+  .wr-bar i{display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent2),var(--accent));}
+
+  .match-btns{display:flex; gap:8px; margin-top:10px;}
+  .mbtn{flex:1; border:none; border-radius:10px; padding:10px 0; font-weight:900; font-size:14px; cursor:pointer;}
+  .mbtn.win{background:rgba(25,230,140,.14); color:var(--accent); border:1px solid rgba(25,230,140,.35);}
+  .mbtn.loss{background:rgba(246,70,93,.12); color:var(--red); border:1px solid rgba(246,70,93,.35);}
+  .mbtn.ghost{flex:0 0 44px; background:var(--card2); color:var(--muted); border:1px solid var(--border); font-size:16px;}
+  .mbtn:active{transform:scale(.97);}
+
+  .edit-panel{margin-top:10px; border-top:1px dashed var(--border); padding-top:10px; display:flex; flex-direction:column; gap:10px;}
+  .stepper{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .stepper label{font-size:13px; font-weight:700; color:var(--muted);}
+  .step-ctrl{display:flex; align-items:center; gap:10px;}
+  .step-ctrl button{width:36px;height:36px;border-radius:9px;border:1px solid var(--border); background:var(--card2); color:var(--text); font-size:18px; font-weight:900; cursor:pointer;}
+  .step-ctrl span{min-width:30px; text-align:center; font-weight:900; font-size:16px;}
+  .edit-group-label{font-size:11px; font-weight:900; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px;}
+  .confirm-row{display:flex; gap:8px; margin-top:10px;}
+
+  .deck-head{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
+  .deck-name{font-weight:900; font-size:16px; flex:1; background:none; border:none; color:var(--text); padding:4px 2px; border-bottom:1px solid transparent; min-width:0;}
+  .deck-name:focus{outline:none; border-bottom:1px solid var(--accent);}
+  .icon-btn{width:34px;height:34px;flex:0 0 34px;border-radius:9px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:15px;cursor:pointer;}
+  .slot{border:1px dashed var(--border); border-radius:12px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:10px; min-height:56px; width:100%; background:none; color:inherit; font:inherit; text-align:left;}
+  .slot.filled{border-style:solid; background:var(--bg2);}
+  .slot .num{width:24px;height:24px;flex:0 0 24px;border-radius:7px;background:var(--card2); color:var(--muted); font-size:12px; font-weight:900; display:flex;align-items:center;justify-content:center;}
+  .slot .empty-label{color:var(--muted); font-size:14px; flex:1;}
+  .slot-mbtns{display:flex; gap:6px;}
+  .slot-mbtns button{width:40px;height:34px;border-radius:9px;border:none;font-weight:900;font-size:13px;cursor:pointer;}
+  .sw{background:rgba(25,230,140,.14); color:var(--accent); border:1px solid rgba(25,230,140,.35) !important;}
+  .sl{background:rgba(246,70,93,.12); color:var(--red); border:1px solid rgba(246,70,93,.35) !important;}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(5,7,12,.75); z-index:50; display:none; align-items:flex-end; justify-content:center;}
+  .modal-bg.open{display:flex;}
+  .modal{background:var(--bg2); border:1px solid var(--border); border-bottom:none; width:100%; max-width:560px; max-height:86vh; border-radius:18px 18px 0 0; display:flex; flex-direction:column; animation:up .18s ease;}
+  @keyframes up{from{transform:translateY(40px);opacity:.4;}to{transform:none;opacity:1;}}
+  .modal-head{padding:14px 16px 8px; display:flex; align-items:center; justify-content:space-between;}
+  .modal-head h3{font-size:16px; font-weight:800;}
+  .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:4px 8px;}
+  .modal-search{padding:0 14px 10px;}
+  .modal-search input,.custom-input-row input{width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:15px;}
+  .modal-search input:focus,.custom-input-row input:focus{outline:none; border-color:var(--accent);}
+  .modal-list{overflow-y:auto; padding:0 10px 24px; -webkit-overflow-scrolling:touch;}
+  .group-label{font-size:11px; font-weight:900; color:var(--muted); letter-spacing:1px; padding:12px 8px 5px; text-transform:uppercase;}
+  .opt{width:100%; text-align:left; background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:11px; padding:12px 14px; font-size:15px; font-weight:600; margin-bottom:6px; cursor:pointer;}
+  .opt:active{background:var(--card2);}
+  .opt .tag{float:right; color:var(--muted); font-size:12px; font-weight:800;}
+  .opt.add-custom{color:var(--accent); border-style:dashed; font-weight:800;}
+  .custom-input-row{display:flex; gap:8px; padding:4px 8px 8px;}
+  .custom-input-row input{flex:1;}
+  .custom-input-row button{padding:10px 14px; border-radius:10px; border:none; background:var(--accent); color:#0b0d12; font-weight:900; cursor:pointer;}
+
+  .builder{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:14px;}
+  .builder h3{font-size:14px; font-weight:800; margin-bottom:10px; color:var(--muted);}
+  .part-select{width:100%; display:flex; align-items:center; justify-content:space-between; background:var(--bg2); border:1px solid var(--border); border-radius:11px; padding:12px 14px; margin-bottom:8px; color:var(--text); font-size:15px; cursor:pointer;}
+  .part-select .ph{color:var(--muted);}
+  .part-select .lbl{font-size:11px; font-weight:900; color:var(--accent); letter-spacing:.5px; margin-right:8px;}
+  .part-select b{flex:1; text-align:left; font-weight:700;}
+  .part-select .chev{color:var(--muted);}
+
+  .settings-box{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:10px;}
+  .settings-box h3{font-size:15px; font-weight:800; margin-bottom:6px;}
+  .settings-box p{font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:10px;}
+  .settings-box .btn + .btn{margin-top:8px;}
+  .settings-box textarea{width:100%; height:110px; padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:12px; font-family:monospace; margin-top:8px;}
+
+  .empty-state{text-align:center; color:var(--muted); padding:34px 20px; font-size:14px; line-height:1.6;}
+  .empty-state .big{font-size:34px; margin-bottom:8px;}
+
+  .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:92px; z-index:60; background:var(--card2); border:1px solid var(--border); color:var(--text); padding:10px 18px; border-radius:99px; font-size:13.5px; font-weight:700; opacity:0; pointer-events:none; transition:opacity .25s; max-width:90%; text-align:center;}
+  .toast.show{opacity:1;}
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo-x">X</div>
+    <div>
+      <h1>Beyblade X Deck Manager</h1>
+      <div class="sub">Inventario · Deck · Win rate</div>
+    </div>
+  </header>
+
+  <!-- ===== INVENTARIO ===== -->
+  <div id="view-inv">
+    <div class="builder">
+      <h3>CREA UN BEY — scegli le 3 parti</h3>
+      <button class="part-select" onclick="openPicker('blade')">
+        <span class="lbl">LAMA</span><b id="selBlade" class="ph">Scegli la lama…</b><span class="chev">›</span>
+      </button>
+      <button class="part-select" onclick="openPicker('ratchet')">
+        <span class="lbl">RATCHET</span><b id="selRatchet" class="ph">Scegli il ratchet…</b><span class="chev">›</span>
+      </button>
+      <button class="part-select" onclick="openPicker('bit')">
+        <span class="lbl">BIT</span><b id="selBit" class="ph">Scegli il bit…</b><span class="chev">›</span>
+      </button>
+      <button class="btn" onclick="addBey()">＋ Aggiungi all'inventario</button>
+    </div>
+    <div class="section-title">
+      <h2>Il mio inventario</h2>
+      <span class="count-pill" id="invCount">0 bey</span>
+    </div>
+    <div id="invList"></div>
+  </div>
+
+  <!-- ===== DECK ===== -->
+  <div id="view-deck" class="hidden">
+    <div class="section-title">
+      <h2>I miei deck</h2>
+      <button class="btn small" onclick="addDeck()">＋ Nuovo deck</button>
+    </div>
+    <div id="deckList"></div>
+  </div>
+
+  <!-- ===== STATISTICHE ===== -->
+  <div id="view-stats" class="hidden">
+    <div class="section-title"><h2>Classifica combo</h2><span class="count-pill" id="statCount"></span></div>
+    <div id="statsList"></div>
+  </div>
+
+  <!-- ===== BACKUP ===== -->
+  <div id="view-backup" class="hidden">
+    <div class="section-title"><h2>Backup dei dati</h2></div>
+    <div class="settings-box">
+      <h3>💾 Esporta</h3>
+      <p>I dati sono salvati solo su questo telefono. Scarica un file di backup per non perderli se cambi telefono o cancelli il browser.</p>
+      <button class="btn" onclick="exportData()">Scarica backup (.json)</button>
+      <button class="btn secondary" onclick="copyData()">Copia negli appunti</button>
+    </div>
+    <div class="settings-box">
+      <h3>📥 Importa</h3>
+      <p>Carica un backup. <b>Attenzione:</b> sostituisce i dati attuali su questo telefono.</p>
+      <button class="btn secondary" onclick="document.getElementById('fileIn').click()">Scegli file di backup…</button>
+      <input type="file" id="fileIn" accept="application/json,.json" class="hidden" onchange="importFile(this)">
+      <textarea id="pasteBox" placeholder="Oppure incolla qui il testo copiato…"></textarea>
+      <button class="btn secondary" onclick="importPaste()">Importa testo incollato</button>
+    </div>
+    <div class="settings-box">
+      <h3>🧹 Reset</h3>
+      <p>Cancella tutti i bey, i deck e le statistiche su questo telefono.</p>
+      <button class="btn danger" onclick="resetAll()">Cancella tutti i dati</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<nav class="tabs">
+  <button class="tab active" id="tab-inv" onclick="switchTab('inv')"><span class="ico">🧰</span>Inventario</button>
+  <button class="tab" id="tab-deck" onclick="switchTab('deck')"><span class="ico">🌀</span>Deck</button>
+  <button class="tab" id="tab-stats" onclick="switchTab('stats')"><span class="ico">📊</span>Statistiche</button>
+  <button class="tab" id="tab-backup" onclick="switchTab('backup')"><span class="ico">💾</span>Backup</button>
+</nav>
+
+<!-- Picker parti / bey -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closePicker()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">Scegli</h3>
+      <button class="modal-close" onclick="closePicker()">✕</button>
+    </div>
+    <div class="modal-search"><input id="searchInput" type="text" placeholder="Cerca…" oninput="renderPickerList()"></div>
+    <div class="custom-input-row hidden" id="customRow">
+      <input id="customInput" type="text" placeholder="Nome personalizzato…">
+      <button onclick="confirmCustom()">OK</button>
+    </div>
+    <div class="modal-list" id="modalList"></div>
+  </div>
+</div>
+
+<!-- Finish -->
+<div class="modal-bg" id="finBg" onclick="if(event.target===this)closeFin()">
+  <div class="modal" style="max-height:70vh">
+    <div class="modal-head">
+      <h3 id="finTitle">Com'è finito il match?</h3>
+      <button class="modal-close" onclick="closeFin()">✕</button>
+    </div>
+    <div class="modal-list" style="padding-top:4px" id="finList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================== DATABASE PARTI (fonte: beybladehub.app) ================== */
+const BLADES = {
+  "BX": ["DranSword","HellsScythe","WizardArrow","KnightShield","KnightLance","SharkEdge","LeonClaw","ViperTail","RhinoHorn","HellsScythe 2.0","DranDagger","HellsChain","PhoenixWing","WyvernGale","UnicornSting","SphinxCowl","TyrannoBeat","Weiss Tiger","Cobalt Dragoon","Black Shell","WhaleWave","BearScratch","Crimson Garuda","Shelter Drake","TriceraPress","SamuraiCalibur","Cobalt Drake","GoatTackle","DranStrike","Heaven's Ring","Luster Dragoon","KnightShield 2.0","WizardArrow 2.0","Siegsuperion","DranSword 2.0","PhoenixFeather","ShinobiKnife","SamuraiSteel","PteraSwing","MammothTusk","CrocoCrunch","TyrannoRoar","TriceraSpiky","SharkGill"],
+  "UX": ["DranBuster","HellsHammer","WizardRod","ShinobiShadow","LeonCrest","PhoenixRudder","Silver Wolf","SamuraiSaber","KnightMail","Impact Drake","GhostCircle","GolemRock","ScorpioSpear","SharkScale","ClockMirage","Meteor Dragoon","MummyCurse","Bullet Griffon","Glory Valkyrie","HellsNether","Vanish Lucifer","Bison Burrow","OrochiCluster","Aero Pegasus","WyvernHover"],
+  "CX (chip / lame)": ["Dran","Brave","Slash","Wizard","Arc","Round","Perseus","Dark","Bumper","Hells","Rhino","Reaper","Turn","Charge","Fox","Brush","Jaggy","Pegasus","Blast","Assault","Cerberus","Whale","Flame","Massive","Wheel","Sol","Eclipse","Dual","Wolf","Hunt","Free","Emperor","Might","Heavy","Phoenix","Flare","Zillion","Bahamut","Break","Knuckle","Blitz","Knight","Valkyrie","Volt","Guard","Vertical","Fortress","Ragna","Flow","Erase","Rage","Unicorn","Peak","Odd","Delta","Brachio","Whip","Croco","Tough","Quell","Tread","Weight","Force","Tiga","Kid","Leon","Fang"],
+  "Collab": ["Captain America","Red Hulk","Miles Morales","Green Goblin","Obi-Wan Kenobi","General Grievous","Chewbacca","Stormtrooper","Ironman","Thanos","Spiderman","Venom","Luke Skywalker","Darth Vader","The Mandalorian","Moff Gideon","Optimus Prime","Megatron","Optimus Primal","Starscream","Bumblebee","Shockwave","T-Rex","Mosasaurus","Spinosaurus","Quetzalcoatlus","Grogu"],
+  "Reissue": ["Dranzer Spiral","Driger Slash","Lightning L-Drago (Upper)","Lightning L-Drago (Rapid)","Draciel Shield","Xeno Xcalibur","Rock Leone","Storm Spriggan","Dragoon Storm","Storm Pegasis","Victory Valkyrie"]
+};
+const RATCHETS = ["0-60","0-70","0-80","1-50","1-60","1-70","1-80","2-60","2-70","2-80","3-60","3-70","3-80","3-85","4-50","4-55","4-60","4-70","4-80","5-50","5-60","5-70","5-80","6-60","6-70","6-80","7-55","7-60","7-70","7-80","8-70","8-80","9-60","9-65","9-70","9-80","M-65","M-85"];
+const BITS = [
+  ["Accel","A"],["Ball","B"],["Bound Spike","BS"],["Cyclone","C"],["Dot","D"],["Disk Ball","DB"],["Disk Spike","DS"],
+  ["Elevate","E"],["Flat","F"],["Free Flat","FF"],["Free Ball","FB"],["Glide","G"],["Glide Ball","GB"],["Glide Flat","GF"],
+  ["Gear Needle","GN"],["Glide Point","GP"],["Glide Rush","GR"],["Glide Unite","GU"],["Hexa","H"],["High Needle","HN"],
+  ["High Taper","HT"],["Ignition","I"],["Jolt","J"],["Kick","K"],["Level","L"],["Low Cyclone","LC"],["Low Flat","LF"],
+  ["Low Orb","LO"],["Low Point","LP"],["Low Rush","LR"],["Merge","M"],["Metal Needle","MN"],["Metal Taper","MT"],
+  ["Needle","N"],["Narrow","Nr"],["Orb","O"],["Operate","Op"],["Point","P"],["Quake","Q"],["Rush","R"],
+  ["Rubber Accel","RA"],["Spike","S"],["Taper","T"],["Taper Kick","TK"],["Taper Point","TP"],["Turbo","Tr"],
+  ["Unite","U"],["Under Flat","UF"],["Under Needle","UN"],["Vortex","V"],["Wedge","W"],["Wall Ball","WB"],
+  ["Wall Wedge","WW"],["Yielding","Y"],["Zap","Z"]
+];
+const FIN_TYPES = [["burst","💥","Burst"],["xtreme","⚡","Xtreme"],["pocket","🕳️","Pocket (Over)"]];
+
+/* ================== STATO ================== */
+const LS_KEY = "bbx-deck-manager-v1";
+const EMPTY = () => ({ version:1, inventory:[], decks:[], custom:{blade:[],ratchet:[],bit:[]} });
+let state = EMPTY();
+let sel = { blade:null, ratchet:null, bit:null };
+let pickerMode = null, slotTarget = null, openEditId = null;
+let confirmDeleteId = null, confirmDeleteDeckId = null, pendingMatch = null;
+
+const $ = id => document.getElementById(id);
+const uidGen = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+/* ================== PERSISTENZA (solo sul telefono) ================== */
+function loadState(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){ const s = JSON.parse(raw); if(s && Array.isArray(s.inventory)) state = Object.assign(EMPTY(), s); }
+  }catch(e){ toast("Impossibile leggere i dati salvati"); }
+  state.inventory.forEach(ensureFin);
+}
+function persist(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  catch(e){ toast("Memoria del browser piena o disabilitata"); }
+}
+
+/* ================== HELPERS ================== */
+function ensureFin(b){
+  if(!b.fw) b.fw = {burst:0,xtreme:0,pocket:0};
+  if(!b.fl) b.fl = {burst:0,xtreme:0,pocket:0};
+}
+function beyName(b){ return b.blade + " " + b.ratchet + " " + b.bit; }
+function wrOf(w,l){ const t=w+l; return t===0 ? null : Math.round(w/t*100); }
+function wrClass(wr){ if(wr===null) return "none"; if(wr>=60) return "good"; if(wr>=40) return "mid"; return "bad"; }
+function subText(b){
+  const t=b.w+b.l;
+  return t===0 ? "Nessun match registrato" : t + " match · " + b.w + " vinti · " + b.l + " persi";
+}
+function hasFin(b){ ensureFin(b); return FIN_TYPES.some(([k])=> b.fw[k]>0 || b.fl[k]>0); }
+function finText(b){ ensureFin(b); return FIN_TYPES.map(([k,ico])=> ico+" "+b.fw[k]+"-"+b.fl[k]).join(" · "); }
+function getBey(id){ return state.inventory.find(b => b.id===id) || null; }
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove("show"), 1800);
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ================== TABS ================== */
+function switchTab(t){
+  ["inv","deck","stats","backup"].forEach(x=>{
+    $("view-"+x).classList.toggle("hidden", x!==t);
+    $("tab-"+x).classList.toggle("active", x===t);
+  });
+  if(t==="stats") renderStats();
+  window.scrollTo(0,0);
+}
+
+/* ================== MATCH + FINISH ================== */
+function addMatch(id, win){
+  const b = getBey(id); if(!b) return;
+  pendingMatch = { id, win };
+  $("finTitle").textContent = win ? "🏆 Vittoria! Come hai vinto?" : "💀 Sconfitta… Come hai perso?";
+  let html = "";
+  FIN_TYPES.forEach(([k,ico,nome])=>{
+    const lbl = win ? "Hai fatto " + nome : nome + " subito";
+    html += '<button class="opt" onclick="pickFin(\''+k+'\')">'+ico+' '+esc(nome)+'<span class="tag">'+esc(lbl)+'</span></button>';
+  });
+  html += '<button class="opt" onclick="pickFin(\'spin\')">🌀 Spin finish / normale<span class="tag">solo V-P</span></button>';
+  $("finList").innerHTML = html;
+  $("finBg").classList.add("open");
+}
+function closeFin(){ $("finBg").classList.remove("open"); pendingMatch = null; }
+function pickFin(type){
+  if(!pendingMatch) return;
+  const b = getBey(pendingMatch.id);
+  if(!b){ closeFin(); return; }
+  ensureFin(b);
+  const win = pendingMatch.win;
+  if(win) b.w++; else b.l++;
+  if(type !== "spin") (win ? b.fw : b.fl)[type]++;
+  closeFin();
+  persist(); renderAll();
+  toast(win ? "Vittoria registrata ✔" : "Sconfitta registrata ✔");
+}
+
+/* ================== PICKER ================== */
+function openPicker(mode, deckId, slotIdx){
+  pickerMode = mode;
+  slotTarget = (mode==="slot") ? {deckId, slotIdx} : null;
+  $("searchInput").value = "";
+  $("customRow").classList.add("hidden");
+  $("modalTitle").textContent =
+    mode==="blade" ? "Scegli la lama" :
+    mode==="ratchet" ? "Scegli il ratchet" :
+    mode==="bit" ? "Scegli il bit" : "Scegli un bey dall'inventario";
+  renderPickerList();
+  $("modalBg").classList.add("open");
+}
+function closePicker(){ $("modalBg").classList.remove("open"); pickerMode=null; }
+
+function renderPickerList(){
+  const q = $("searchInput").value.trim().toLowerCase();
+  let html = "";
+
+  if(pickerMode === "slot"){
+    const deck = state.decks.find(d=>d.id===slotTarget.deckId);
+    const used = deck ? deck.slots.filter(Boolean) : [];
+    const items = state.inventory.filter(b => !used.includes(b.id) && beyName(b).toLowerCase().includes(q));
+    if(state.inventory.length===0) html = '<div class="empty-state">L\'inventario è vuoto.<br>Aggiungi prima qualche bey!</div>';
+    else if(items.length===0) html = '<div class="empty-state">Nessun bey disponibile<br>(già nel deck o nessun risultato).</div>';
+    else items.forEach(b=>{
+      const wr = wrOf(b.w,b.l);
+      html += '<button class="opt" onclick="pickSlot(\''+b.id+'\')">'+esc(beyName(b))+'<span class="tag">'+(wr===null?"–":wr+"% WR")+'</span></button>';
+    });
+    $("modalList").innerHTML = html;
+    return;
+  }
+
+  html += '<button class="opt add-custom" onclick="showCustomInput()">＋ Aggiungi ' +
+    (pickerMode==="blade"?"lama":pickerMode==="ratchet"?"ratchet":"bit") + ' personalizzato…</button>';
+
+  const matchC = (state.custom[pickerMode]||[]).filter(n => n.toLowerCase().includes(q));
+  if(matchC.length){
+    html += '<div class="group-label">Personalizzati</div>';
+    matchC.forEach(n => html += '<button class="opt" onclick="pickPart(this.dataset.v)" data-v="'+esc(n)+'">'+esc(n)+'</button>');
+  }
+
+  if(pickerMode === "blade"){
+    for(const serie in BLADES){
+      const items = BLADES[serie].filter(n => n.toLowerCase().includes(q));
+      if(!items.length) continue;
+      html += '<div class="group-label">'+esc(serie)+'</div>';
+      items.forEach(n => html += '<button class="opt" onclick="pickPart(this.dataset.v)" data-v="'+esc(n)+'">'+esc(n)+'</button>');
+    }
+  } else if(pickerMode === "ratchet"){
+    RATCHETS.filter(n => n.toLowerCase().includes(q))
+      .forEach(n => html += '<button class="opt" onclick="pickPart(this.dataset.v)" data-v="'+esc(n)+'">'+esc(n)+'</button>');
+  } else if(pickerMode === "bit"){
+    BITS.filter(([n,a]) => (n+" "+a).toLowerCase().includes(q))
+      .forEach(([n,a]) => html += '<button class="opt" onclick="pickPart(this.dataset.v)" data-v="'+esc(n)+'">'+esc(n)+'<span class="tag">'+esc(a)+'</span></button>');
+  }
+  $("modalList").innerHTML = html || '<div class="empty-state">Nessun risultato.</div>';
+}
+
+function showCustomInput(){
+  $("customRow").classList.remove("hidden");
+  $("customInput").value = $("searchInput").value.trim();
+  $("customInput").focus();
+}
+function confirmCustom(){
+  const v = $("customInput").value.trim();
+  if(!v) return;
+  if(!state.custom[pickerMode].includes(v)){ state.custom[pickerMode].push(v); persist(); }
+  pickPart(v);
+}
+function pickPart(v){ sel[pickerMode] = v; updateBuilder(); closePicker(); }
+function pickSlot(beyId){
+  const deck = state.decks.find(d=>d.id===slotTarget.deckId);
+  if(deck){ deck.slots[slotTarget.slotIdx] = beyId; persist(); renderDecks(); }
+  closePicker();
+}
+function updateBuilder(){
+  const map = { blade:["selBlade","Scegli la lama…"], ratchet:["selRatchet","Scegli il ratchet…"], bit:["selBit","Scegli il bit…"] };
+  for(const k in map){
+    const el = $(map[k][0]);
+    if(sel[k]){ el.textContent = sel[k]; el.classList.remove("ph"); }
+    else { el.textContent = map[k][1]; el.classList.add("ph"); }
+  }
+}
+
+/* ================== INVENTARIO ================== */
+function addBey(){
+  if(!sel.blade || !sel.ratchet || !sel.bit){ toast("Scegli lama, ratchet e bit prima!"); return; }
+  if(state.inventory.some(b => b.blade===sel.blade && b.ratchet===sel.ratchet && b.bit===sel.bit)){
+    toast("Questa combo è già nell'inventario!"); return;
+  }
+  state.inventory.unshift({ id: uidGen(), blade: sel.blade, ratchet: sel.ratchet, bit: sel.bit, w:0, l:0,
+    fw:{burst:0,xtreme:0,pocket:0}, fl:{burst:0,xtreme:0,pocket:0} });
+  sel = { blade:null, ratchet:null, bit:null };
+  updateBuilder(); persist(); renderAll();
+  toast("Bey aggiunto all'inventario ✔");
+}
+function stepStat(id, key, delta){
+  const b = getBey(id); if(!b) return;
+  b[key] = Math.max(0, b[key] + delta); persist(); renderAll();
+}
+function stepFin(id, key, side, delta){
+  const b = getBey(id); if(!b) return;
+  ensureFin(b); b[side][key] = Math.max(0, b[side][key] + delta); persist(); renderAll();
+}
+function toggleEdit(id){ openEditId = (openEditId===id) ? null : id; confirmDeleteId = null; renderInv(); }
+function askDelete(id){ confirmDeleteId = id; renderInv(); }
+function cancelDelete(){ confirmDeleteId = null; renderInv(); }
+function doDelete(id){
+  state.inventory = state.inventory.filter(b => b.id!==id);
+  state.decks.forEach(d => d.slots = d.slots.map(s => s===id ? null : s));
+  openEditId = null; confirmDeleteId = null;
+  persist(); renderAll(); toast("Bey eliminato");
+}
+
+function beyCard(b, inEdit){
+  ensureFin(b);
+  const wr = wrOf(b.w,b.l), pct = wr===null ? 0 : wr;
+  let html = '<div class="card"><div class="bey-row">'
+    + '<div class="bey-info"><div class="bey-name">'+esc(beyName(b))+'</div>'
+    + '<div class="bey-sub">'+subText(b)+'</div>'
+    + (hasFin(b) ? '<div class="fin-line">'+finText(b)+' <span style="opacity:.65">(fatti-subiti)</span></div>' : '')
+    + '</div>'
+    + '<div class="wr '+wrClass(wr)+'">'+(wr===null?"–":wr+"%")+'<small>win rate</small></div>'
+    + '</div><div class="wr-bar"><i style="width:'+pct+'%"></i></div>'
+    + '<div class="match-btns">'
+    +   '<button class="mbtn win" onclick="addMatch(\''+b.id+'\',true)">＋ Vittoria</button>'
+    +   '<button class="mbtn loss" onclick="addMatch(\''+b.id+'\',false)">＋ Sconfitta</button>'
+    +   '<button class="mbtn ghost" onclick="toggleEdit(\''+b.id+'\')">⚙️</button>'
+    + '</div>';
+  if(inEdit){
+    html += '<div class="edit-panel"><div class="edit-group-label">Match</div>'
+      + '<div class="stepper"><label>Vittorie</label><div class="step-ctrl">'
+      +   '<button onclick="stepStat(\''+b.id+'\',\'w\',-1)">−</button><span>'+b.w+'</span><button onclick="stepStat(\''+b.id+'\',\'w\',1)">＋</button></div></div>'
+      + '<div class="stepper"><label>Sconfitte</label><div class="step-ctrl">'
+      +   '<button onclick="stepStat(\''+b.id+'\',\'l\',-1)">−</button><span>'+b.l+'</span><button onclick="stepStat(\''+b.id+'\',\'l\',1)">＋</button></div></div>';
+    FIN_TYPES.forEach(([k,ico,nome])=>{
+      html += '<div class="edit-group-label">'+ico+' '+esc(nome)+'</div>'
+        + '<div class="stepper"><label>Fatti</label><div class="step-ctrl">'
+        +   '<button onclick="stepFin(\''+b.id+'\',\''+k+'\',\'fw\',-1)">−</button><span>'+b.fw[k]+'</span><button onclick="stepFin(\''+b.id+'\',\''+k+'\',\'fw\',1)">＋</button></div></div>'
+        + '<div class="stepper"><label>Subiti</label><div class="step-ctrl">'
+        +   '<button onclick="stepFin(\''+b.id+'\',\''+k+'\',\'fl\',-1)">−</button><span>'+b.fl[k]+'</span><button onclick="stepFin(\''+b.id+'\',\''+k+'\',\'fl\',1)">＋</button></div></div>';
+    });
+    if(confirmDeleteId === b.id){
+      html += '<div class="confirm-row"><button class="btn danger" onclick="doDelete(\''+b.id+'\')">Sì, elimina</button>'
+        + '<button class="btn secondary" onclick="cancelDelete()">Annulla</button></div>';
+    } else {
+      html += '<button class="btn danger" onclick="askDelete(\''+b.id+'\')">🗑 Elimina bey</button>';
+    }
+    html += '</div>';
+  }
+  return html + '</div>';
+}
+function renderInv(){
+  const n = state.inventory.length;
+  $("invCount").textContent = n + " bey";
+  $("invList").innerHTML = n===0
+    ? '<div class="empty-state"><div class="big">🌀</div>Nessun bey ancora.<br>Crea la tua prima combo qui sopra!</div>'
+    : state.inventory.map(b => beyCard(b, openEditId===b.id)).join("");
+}
+
+/* ================== DECK ================== */
+function addDeck(){
+  state.decks.push({ id: uidGen(), name: "Deck " + (state.decks.length+1), slots: [null,null,null] });
+  persist(); renderDecks();
+}
+function renameDeck(id, name){
+  const d = state.decks.find(x=>x.id===id); if(!d) return;
+  d.name = name.trim() || d.name; persist();
+}
+function askDeleteDeck(id){ confirmDeleteDeckId = id; renderDecks(); }
+function cancelDeleteDeck(){ confirmDeleteDeckId = null; renderDecks(); }
+function doDeleteDeck(id){
+  state.decks = state.decks.filter(d=>d.id!==id);
+  confirmDeleteDeckId = null; persist(); renderDecks(); toast("Deck eliminato");
+}
+function clearSlot(deckId, idx){
+  const d = state.decks.find(x=>x.id===deckId); if(!d) return;
+  d.slots[idx] = null; persist(); renderDecks();
+}
+function renderDecks(){
+  if(state.decks.length===0){
+    $("deckList").innerHTML = '<div class="empty-state"><div class="big">⚔️</div>Nessun deck ancora.<br>Crea il tuo primo deck da 3 bey!</div>';
+    return;
+  }
+  let html = "";
+  state.decks.forEach(d=>{
+    let W=0, L=0;
+    const FW={burst:0,xtreme:0,pocket:0}, FL={burst:0,xtreme:0,pocket:0};
+    d.slots.forEach(s=>{
+      const b=getBey(s);
+      if(b){ ensureFin(b); W+=b.w; L+=b.l; FIN_TYPES.forEach(([k])=>{ FW[k]+=b.fw[k]; FL[k]+=b.fl[k]; }); }
+    });
+    const dwr = wrOf(W,L);
+    html += '<div class="card"><div class="deck-head">'
+      + '<input class="deck-name" value="'+esc(d.name)+'" onchange="renameDeck(\''+d.id+'\', this.value)">'
+      + '<span class="wr '+wrClass(dwr)+'" style="font-size:14px;min-width:0;">'+(dwr===null?"–":dwr+"% WR")+'</span>'
+      + '<button class="icon-btn" onclick="askDeleteDeck(\''+d.id+'\')">🗑</button></div>';
+    if(confirmDeleteDeckId === d.id){
+      html += '<div class="confirm-row" style="margin:0 0 10px"><button class="btn danger" onclick="doDeleteDeck(\''+d.id+'\')">Sì, elimina deck</button>'
+        + '<button class="btn secondary" onclick="cancelDeleteDeck()">Annulla</button></div>';
+    }
+    d.slots.forEach((s, i)=>{
+      const b = getBey(s);
+      if(b){
+        const wr = wrOf(b.w,b.l);
+        html += '<div class="slot filled"><div class="num">'+(i+1)+'</div>'
+          + '<div class="bey-info"><div class="bey-name" style="font-size:14px">'+esc(beyName(b))+'</div>'
+          + '<div class="bey-sub">'+(wr===null?"– WR":wr+"% WR")+' · '+subText(b)+'</div>'
+          + (hasFin(b) ? '<div class="fin-line">'+finText(b)+'</div>' : '')
+          + '</div><div class="slot-mbtns">'
+          +   '<button class="sw" onclick="addMatch(\''+b.id+'\',true)">+V</button>'
+          +   '<button class="sl" onclick="addMatch(\''+b.id+'\',false)">+S</button>'
+          +   '<button class="icon-btn" style="width:30px;height:34px;flex:0 0 30px" onclick="clearSlot(\''+d.id+'\','+i+')">✕</button>'
+          + '</div></div>';
+      } else {
+        html += '<button class="slot" onclick="openPicker(\'slot\',\''+d.id+'\','+i+')">'
+          + '<div class="num">'+(i+1)+'</div><span class="empty-label">＋ Scegli un bey dall\'inventario</span></button>';
+      }
+    });
+    html += '<div style="font-size:12px;color:var(--muted);margin-top:4px;text-align:right">Totale deck: '+(W+L)+' match · '+W+' vinti · '+L+' persi';
+    if(W+L>0) html += '<br>' + FIN_TYPES.map(([k,ico])=> ico+" "+FW[k]+"-"+FL[k]).join(" · ") + ' <span style="opacity:.65">(fatti-subiti)</span>';
+    html += '</div></div>';
+  });
+  $("deckList").innerHTML = html;
+}
+
+/* ================== STATISTICHE ================== */
+function renderStats(){
+  const played = state.inventory.filter(b => b.w + b.l > 0);
+  $("statCount").textContent = played.length + " combo giocate";
+  if(played.length===0){
+    $("statsList").innerHTML = '<div class="empty-state"><div class="big">📊</div>Ancora nessun match registrato.<br>Registra vittorie e sconfitte per vedere la classifica!</div>';
+    return;
+  }
+  const sorted = played.slice().sort((a,b)=>{
+    const wa=wrOf(a.w,a.l), wb=wrOf(b.w,b.l);
+    if(wb!==wa) return wb-wa;
+    return (b.w+b.l)-(a.w+a.l);
+  });
+  $("statsList").innerHTML = sorted.map((b,i)=>{
+    const wr = wrOf(b.w,b.l);
+    const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":("#"+(i+1));
+    return '<div class="card"><div class="bey-row">'
+      + '<div style="font-size:16px;font-weight:900;min-width:34px">'+medal+'</div>'
+      + '<div class="bey-info"><div class="bey-name" style="font-size:14px">'+esc(beyName(b))+'</div>'
+      + '<div class="bey-sub">'+subText(b)+'</div>'
+      + (hasFin(b) ? '<div class="fin-line">'+finText(b)+' <span style="opacity:.65">(fatti-subiti)</span></div>' : '')
+      + '</div><div class="wr '+wrClass(wr)+'">'+wr+'%<small>win rate</small></div>'
+      + '</div><div class="wr-bar"><i style="width:'+wr+'%"></i></div></div>';
+  }).join("");
+}
+
+/* ================== BACKUP: EXPORT / IMPORT ================== */
+function backupJSON(){
+  return JSON.stringify({ app:"bbx-deck-manager", version:1, exportedAt:new Date().toISOString(), data:state }, null, 2);
+}
+function exportData(){
+  const blob = new Blob([backupJSON()], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const d = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = "bbx-backup-"+d+".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  toast("Backup scaricato ✔");
+}
+async function copyData(){
+  try{ await navigator.clipboard.writeText(backupJSON()); toast("Copiato negli appunti ✔"); }
+  catch(e){ $("pasteBox").value = backupJSON(); toast("Copia il testo qui sotto"); }
+}
+function applyBackup(text){
+  let parsed;
+  try{ parsed = JSON.parse(text); }catch(e){ toast("File non valido"); return; }
+  const data = parsed && parsed.data ? parsed.data : parsed;
+  if(!data || !Array.isArray(data.inventory) || !Array.isArray(data.decks)){ toast("Backup non riconosciuto"); return; }
+  if(!confirm("Sostituire i dati attuali con il backup?")) return;
+  state = Object.assign(EMPTY(), data);
+  state.inventory.forEach(ensureFin);
+  persist(); sel={blade:null,ratchet:null,bit:null}; updateBuilder(); renderAll();
+  toast("Backup importato ✔");
+}
+function importFile(input){
+  const f = input.files && input.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => applyBackup(String(r.result));
+  r.readAsText(f);
+  input.value = "";
+}
+function importPaste(){
+  const t = $("pasteBox").value.trim();
+  if(!t){ toast("Incolla prima il testo"); return; }
+  applyBackup(t);
+}
+function resetAll(){
+  if(!confirm("Cancellare tutti i bey, i deck e le statistiche su questo telefono?")) return;
+  state = EMPTY(); persist(); sel={blade:null,ratchet:null,bit:null}; updateBuilder(); renderAll();
+  toast("Dati cancellati");
+}
+
+/* ================== RENDER ================== */
+function renderAll(){
+  renderInv(); renderDecks();
+  if(!$("view-stats").classList.contains("hidden")) renderStats();
+}
+
+/* ================== AVVIO ================== */
+if("serviceWorker" in navigator){ /* opzionale: nessuna cache offline richiesta */ }
+loadState();
+updateBuilder();
+renderAll();
+</script>
+</body>
+</html>
